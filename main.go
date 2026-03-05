@@ -40,7 +40,6 @@ func createTiles() []*Tile {
 			IsBlank:    false,
 		})
 	}
-	// Add blank tile
 	tiles = append(tiles, &Tile{
 		Color:      "",
 		CorrectPos: 8,
@@ -63,9 +62,46 @@ func createBoard(tiles []*Tile) [][]*Tile {
 	return board
 }
 
-// Shuffle board with random legal moves
-func shuffleBoard(board [][]*Tile, moves int) {
+// Count inversions in a 1D tile slice (ignoring blank)
+func countInversions(tiles []*Tile) int {
+	count := 0
+	for i := 0; i < len(tiles); i++ {
+		if tiles[i].IsBlank {
+			continue
+		}
+		for j := i + 1; j < len(tiles); j++ {
+			if tiles[j].IsBlank {
+				continue
+			}
+			if tiles[i].CorrectPos > tiles[j].CorrectPos {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+// Shuffle tiles randomly and ensure solvable
+func shuffleSolvable(tiles []*Tile) {
 	rand.Seed(time.Now().UnixNano())
+	for {
+		// Fisher–Yates shuffle
+		for i := len(tiles) - 1; i > 0; i-- {
+			j := rand.Intn(i + 1)
+			tiles[i], tiles[j] = tiles[j], tiles[i]
+		}
+		if countInversions(tiles)%2 == 0 {
+			break // solvable
+		}
+	}
+	// Update CorrectPos after shuffle
+	for i, t := range tiles {
+		t.CorrectPos = i
+	}
+}
+
+// Shuffle board with random legal moves (optional, more natural movement)
+func shuffleBoard(board [][]*Tile, moves int) {
 	dirs := []string{"w", "a", "s", "d"}
 	for i := 0; i < moves; i++ {
 		move(board, dirs[rand.Intn(4)])
@@ -76,23 +112,19 @@ func shuffleBoard(board [][]*Tile, moves int) {
 func printBoard(current, goal [][]*Tile) {
 	fmt.Println()
 	for i := 0; i < 3; i++ {
-		// Goal board (left)
 		for j := 0; j < 3; j++ {
 			tile := goal[i][j]
 			if tile.IsBlank {
-				fmt.Print("   ") // truly blank
+				fmt.Print("   ")
 			} else {
 				fmt.Print(tile.Color + "   " + resetCode)
 			}
 		}
-
-		fmt.Print("    ") // gap between goal and current board
-
-		// Current board (right)
+		fmt.Print("    ")
 		for j := 0; j < 3; j++ {
 			tile := current[i][j]
 			if tile.IsBlank {
-				fmt.Print("   ") // truly blank
+				fmt.Print("   ")
 			} else {
 				fmt.Print(tile.Color + "   " + resetCode)
 			}
@@ -156,8 +188,11 @@ func checkWin(board [][]*Tile) bool {
 
 func playGame(reader *bufio.Reader) {
 	tiles := createTiles()
-	currentBoard := createBoard(tiles)
+	shuffleSolvable(tiles) // random and solvable
 	goalBoard := createBoard(tiles)
+
+	// Current board is a copy of goal, then shuffled slightly for realism
+	currentBoard := createBoard(tiles)
 	shuffleBoard(currentBoard, 50)
 
 	for {
@@ -173,7 +208,6 @@ func playGame(reader *bufio.Reader) {
 		input = strings.TrimSpace(input)
 
 		if input == "q" {
-			// Reveal solved board on the right before asking
 			fmt.Println("\nYou quit the level. Here’s the solved puzzle:")
 			printBoard(goalBoard, goalBoard)
 			break
@@ -191,18 +225,26 @@ func main() {
 	fmt.Println("\nColor Sliding Puzzle!!!\n")
 	fmt.Println("Left: finished display goal")
 	fmt.Println("Right: current board\n")
-	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.\n")
+	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.")
 
 	for {
 		playGame(reader)
 
-		// Ask user if they want to play again
-		fmt.Print("Play again? (y/n): ")
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(strings.ToLower(input))
-		if input != "y" {
-			fmt.Println("\nThanks for playing! Goodbye!")
-			break
+		// Ask user if they want to play again, with input validation
+		for {
+			fmt.Print("Play again? (y/n): ")
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(strings.ToLower(input))
+
+			if input == "y" {
+				fmt.Println()
+				break // start a new game
+			} else if input == "n" {
+				fmt.Println("\nThanks for playing! Goodbye!")
+				return
+			} else {
+				fmt.Println("Invalid input! Please type 'y' to play again or 'n' to quit.")
+			}
 		}
 	}
 }
