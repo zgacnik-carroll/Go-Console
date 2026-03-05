@@ -134,7 +134,7 @@ func findBlank(board [][]*Tile) (int, int) {
 	return -1, -1
 }
 
-func move(board [][]*Tile, dir string) {
+func move(board [][]*Tile, dir string) bool {
 
 	row, col := findBlank(board)
 	newRow, newCol := row, col
@@ -149,18 +149,19 @@ func move(board [][]*Tile, dir string) {
 	case "d":
 		newCol++
 	default:
-		fmt.Println("Invalid input. Please type w, a, s, or d.")
-		return
+		return false // invalid key
 	}
 
-	// Boundary check
+	// Check boundaries
 	if newRow < 0 || newRow > 2 || newCol < 0 || newCol > 2 {
-		return
+		return false // illegal move
 	}
 
 	// Swap POINTERS
 	board[row][col], board[newRow][newCol] =
 		board[newRow][newCol], board[row][col]
+
+	return true
 }
 
 func main() {
@@ -190,6 +191,10 @@ func main() {
 			return
 		}
 
-		move(board, input)
+		success := move(board, input)
+
+		if !success {
+			fmt.Println("Invalid input. Use w/a/s/d and stay within bounds.")
+		}
 	}
 }
