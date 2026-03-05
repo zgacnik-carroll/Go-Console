@@ -3,70 +3,56 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
+// Tile struct represents a color tile
 type Tile struct {
-	Lines        []string
-	CorrectIndex int
+	Color      string
+	CorrectPos int
+	IsBlank    bool
 }
 
+// ANSI color codes for backgrounds
+var colorCodes = []string{
+	"\033[41m",  // Red
+	"\033[42m",  // Green
+	"\033[44m",  // Blue
+	"\033[45m",  // Magenta
+	"\033[46m",  // Cyan
+	"\033[43m",  // Yellow
+	"\033[47m",  // White
+	"\033[101m", // Bright Red
+}
+
+const resetCode = "\033[0m"
+
+// Create a 3x3 board of colored tiles
 func createTiles() []*Tile {
-
-	image := []string{
-		"#########",
-		"#       #",
-		"#       #",
-		"#       #",
-		"#       #",
-		"#       #",
-		"#       #",
-		"#       #",
-		"#########",
-	}
-
-	tileSize := 3
 	tiles := []*Tile{}
-	index := 0
-
-	for row := 0; row < 3; row++ {
-		for col := 0; col < 3; col++ {
-
-			var lines []string
-
-			for i := 0; i < tileSize; i++ {
-
-				line := image[row*tileSize+i]
-				start := col * tileSize
-				end := start + tileSize
-
-				lines = append(lines, line[start:end])
-			}
-
-			tile := &Tile{
-				Lines:        lines,
-				CorrectIndex: index,
-			}
-
-			tiles = append(tiles, tile)
-			index++
-		}
+	for i := 0; i < 8; i++ {
+		tiles = append(tiles, &Tile{
+			Color:      colorCodes[i%len(colorCodes)],
+			CorrectPos: i,
+			IsBlank:    false,
+		})
 	}
-
-	// Make last tile blank
-	tiles[8] = &Tile{
-		Lines:        nil,
-		CorrectIndex: 8,
-	}
-
+	// Add blank tile
+	tiles = append(tiles, &Tile{
+		Color:      "",
+		CorrectPos: 8,
+		IsBlank:    true,
+	})
 	return tiles
 }
 
+// Convert 1D slice of tiles to 2D board
 func createBoard(tiles []*Tile) [][]*Tile {
 	board := make([][]*Tile, 3)
 	index := 0
-
 	for i := 0; i < 3; i++ {
 		board[i] = make([]*Tile, 3)
 		for j := 0; j < 3; j++ {
@@ -74,59 +60,51 @@ func createBoard(tiles []*Tile) [][]*Tile {
 			index++
 		}
 	}
-
-	// Swap last two tiles to create puzzle state
-	board[2][1], board[2][2] =
-		board[2][2], board[2][1]
-
 	return board
 }
 
-func printBoard(board [][]*Tile) {
-	fmt.Println()
-
-	for row := 0; row < 3; row++ {
-
-		for line := 0; line < 3; line++ {
-
-			for col := 0; col < 3; col++ {
-
-				tile := board[row][col]
-
-				if tile.Lines == nil {
-					fmt.Print("    ") // 4 spaces for blank tile width
-				} else {
-					fmt.Print(tile.Lines[line])
-				}
-			}
-
-			fmt.Println()
-		}
+// Shuffle board with random legal moves
+func shuffleBoard(board [][]*Tile, moves int) {
+	rand.Seed(time.Now().UnixNano())
+	dirs := []string{"w", "a", "s", "d"}
+	for i := 0; i < moves; i++ {
+		move(board, dirs[rand.Intn(4)])
 	}
-
-	fmt.Println()
 }
 
-func checkWin(board [][]*Tile) bool {
-	expected := 0
-
+// Print board with a mini goal display on the left
+func printBoard(current, goal [][]*Tile) {
+	fmt.Println()
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
-
-			if board[i][j].CorrectIndex != expected {
-				return false
+			tile := goal[i][j]
+			if tile.IsBlank {
+				fmt.Print("\033[100m   \033[0m") // black background for blank in goal
+			} else {
+				fmt.Print(tile.Color + "   " + resetCode)
 			}
-			expected++
 		}
-	}
 
-	return true
+		fmt.Print("    ") // gap between goal and current board
+
+		for j := 0; j < 3; j++ {
+			tile := current[i][j]
+			if tile.IsBlank {
+				fmt.Print("\033[100m   \033[0m") // black background for blank
+			} else {
+				fmt.Print(tile.Color + "   " + resetCode)
+			}
+		}
+		fmt.Println()
+	}
+	fmt.Println()
 }
 
+// Find blank tile coordinates
 func findBlank(board [][]*Tile) (int, int) {
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
-			if board[i][j].Lines == nil {
+			if board[i][j].IsBlank {
 				return i, j
 			}
 		}
@@ -134,8 +112,8 @@ func findBlank(board [][]*Tile) (int, int) {
 	return -1, -1
 }
 
+// Move blank tile
 func move(board [][]*Tile, dir string) bool {
-
 	row, col := findBlank(board)
 	newRow, newCol := row, col
 
@@ -149,38 +127,53 @@ func move(board [][]*Tile, dir string) bool {
 	case "d":
 		newCol++
 	default:
-		return false // invalid key
+		return false
 	}
 
-	// Check boundaries
-	if newRow < 0 || newRow > 2 || newCol < 0 || newCol > 2 {
-		return false // illegal move
+	if newRow < 0 || newRow >= 3 || newCol < 0 || newCol >= 3 {
+		return false
 	}
 
-	// Swap POINTERS
-	board[row][col], board[newRow][newCol] =
-		board[newRow][newCol], board[row][col]
+	board[row][col], board[newRow][newCol] = board[newRow][newCol], board[row][col]
+	return true
+}
 
+// Check win condition
+func checkWin(board [][]*Tile) bool {
+	expected := 0
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			if board[i][j].CorrectPos != expected {
+				return false
+			}
+			expected++
+		}
+	}
 	return true
 }
 
 func main() {
-
 	reader := bufio.NewReader(os.Stdin)
 
-	tiles := createTiles()
-	board := createBoard(tiles)
+	fmt.Println("Color Sliding Puzzle")
+	fmt.Println("Left: goal, Right: current board")
+	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.\n")
 
-	fmt.Println("ASCII Sliding Puzzle")
-	fmt.Println("Use w/a/s/d to move bottom-right tile. q to quit.")
+	tiles := createTiles()
+	currentBoard := createBoard(tiles)
+
+	// Goal board (solved)
+	goalBoard := createBoard(tiles)
+
+	// Shuffle the current board
+	shuffleBoard(currentBoard, 50)
 
 	for {
+		printBoard(currentBoard, goalBoard)
 
-		printBoard(board)
-
-		if checkWin(board) {
+		if checkWin(currentBoard) {
 			fmt.Println("Puzzle Solved!")
-			return
+			break
 		}
 
 		fmt.Print("Move: ")
@@ -188,13 +181,12 @@ func main() {
 		input = strings.TrimSpace(input)
 
 		if input == "q" {
+			fmt.Println("Goodbye!")
 			return
 		}
 
-		success := move(board, input)
-
-		if !success {
-			fmt.Println("Invalid input. Use w/a/s/d and stay within bounds.")
+		if !move(currentBoard, input) {
+			fmt.Println("Invalid input! Use w/a/s/d and stay within bounds.")
 		}
 	}
 }
