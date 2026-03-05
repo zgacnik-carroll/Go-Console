@@ -72,14 +72,15 @@ func shuffleBoard(board [][]*Tile, moves int) {
 	}
 }
 
-// Print board with a mini goal display on the left
+// Print board with mini goal display on the left
 func printBoard(current, goal [][]*Tile) {
 	fmt.Println()
 	for i := 0; i < 3; i++ {
+		// Goal board (left)
 		for j := 0; j < 3; j++ {
 			tile := goal[i][j]
 			if tile.IsBlank {
-				fmt.Print("\033[100m   \033[0m") // black background for blank in goal
+				fmt.Print("   ") // truly blank
 			} else {
 				fmt.Print(tile.Color + "   " + resetCode)
 			}
@@ -87,10 +88,11 @@ func printBoard(current, goal [][]*Tile) {
 
 		fmt.Print("    ") // gap between goal and current board
 
+		// Current board (right)
 		for j := 0; j < 3; j++ {
 			tile := current[i][j]
 			if tile.IsBlank {
-				fmt.Print("\033[100m   \033[0m") // black background for blank
+				fmt.Print("   ") // truly blank
 			} else {
 				fmt.Print(tile.Color + "   " + resetCode)
 			}
