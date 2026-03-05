@@ -164,17 +164,19 @@ func playGame(reader *bufio.Reader) {
 		printBoard(currentBoard, goalBoard)
 
 		if checkWin(currentBoard) {
-			fmt.Println("Puzzle Solved!")
+			fmt.Println("Puzzle Solved!\n")
 			break
 		}
 
-		fmt.Print("Move: ")
+		fmt.Print("Move (or q to quit): ")
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 
 		if input == "q" {
-			fmt.Println("Goodbye!")
-			os.Exit(0)
+			// Reveal solved board on the right before asking
+			fmt.Println("\nYou quit the level. Here’s the solved puzzle:")
+			printBoard(goalBoard, goalBoard)
+			break
 		}
 
 		if !move(currentBoard, input) {
@@ -188,7 +190,7 @@ func main() {
 
 	fmt.Println("\nColor Sliding Puzzle!!!\n")
 	fmt.Println("Left: finished display goal")
-	fmt.Println("Right: current board\n\n")
+	fmt.Println("Right: current board\n")
 	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.\n")
 
 	for {
@@ -199,9 +201,8 @@ func main() {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(strings.ToLower(input))
 		if input != "y" {
-			fmt.Println("Thanks for playing! Goodbye!")
+			fmt.Println("\nThanks for playing! Goodbye!")
 			break
 		}
-		fmt.Println()
 	}
 }
