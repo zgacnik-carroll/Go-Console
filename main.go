@@ -157,8 +157,9 @@ func checkWin(board [][]*Tile) bool {
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("Color Sliding Puzzle")
-	fmt.Println("Left: goal, Right: current board")
+	fmt.Println("\nColor Sliding Puzzle!!!\n")
+	fmt.Println("Left: finished display")
+	fmt.Print("Right: current board\n\n")
 	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.\n")
 
 	tiles := createTiles()
