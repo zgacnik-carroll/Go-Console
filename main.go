@@ -154,21 +154,10 @@ func checkWin(board [][]*Tile) bool {
 	return true
 }
 
-func main() {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Println("\nColor Sliding Puzzle!!!\n")
-	fmt.Println("Left: finished display")
-	fmt.Print("Right: current board\n\n")
-	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.\n")
-
+func playGame(reader *bufio.Reader) {
 	tiles := createTiles()
 	currentBoard := createBoard(tiles)
-
-	// Goal board (solved)
 	goalBoard := createBoard(tiles)
-
-	// Shuffle the current board
 	shuffleBoard(currentBoard, 50)
 
 	for {
@@ -185,11 +174,34 @@ func main() {
 
 		if input == "q" {
 			fmt.Println("Goodbye!")
-			return
+			os.Exit(0)
 		}
 
 		if !move(currentBoard, input) {
 			fmt.Println("Invalid input! Use w/a/s/d and stay within bounds.")
 		}
+	}
+}
+
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("\nColor Sliding Puzzle!!!\n")
+	fmt.Println("Left: finished display goal")
+	fmt.Println("Right: current board\n\n")
+	fmt.Println("Use w/a/s/d to move the blank tile. Press q to quit.\n")
+
+	for {
+		playGame(reader)
+
+		// Ask user if they want to play again
+		fmt.Print("Play again? (y/n): ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(strings.ToLower(input))
+		if input != "y" {
+			fmt.Println("Thanks for playing! Goodbye!")
+			break
+		}
+		fmt.Println()
 	}
 }
